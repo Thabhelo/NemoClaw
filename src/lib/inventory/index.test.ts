@@ -3,7 +3,12 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-import { getSandboxInventory, listSandboxesCommand, showStatusCommand } from "./index";
+import {
+  getSandboxInventory,
+  getStatusReport,
+  listSandboxesCommand,
+  showStatusCommand,
+} from "./index";
 
 describe("inventory commands", () => {
   it("returns structured empty inventory for JSON consumers", async () => {
@@ -536,6 +541,49 @@ describe("inventory commands", () => {
     // to whichever sandbox is currently connected.
     expect(lines).toContain("    beta (z-ai/glm-5.1)");
     expect(showServiceStatus).toHaveBeenCalledWith({ sandboxName: "alpha" });
+  });
+
+  it("resolves service status sandbox from SANDBOX_NAME env (#1077)", () => {
+    const savedSandboxName = process.env.SANDBOX_NAME;
+    process.env.SANDBOX_NAME = "env-sandbox";
+    try {
+      const showServiceStatus = vi.fn();
+      showStatusCommand({
+        listSandboxes: () => ({
+          sandboxes: [{ name: "env-sandbox" }, { name: "registry-default" }],
+          defaultSandbox: "registry-default",
+        }),
+        getLiveInference: () => null,
+        showServiceStatus,
+        log: vi.fn(),
+      });
+      expect(showServiceStatus).toHaveBeenCalledWith({ sandboxName: "env-sandbox" });
+    } finally {
+      if (savedSandboxName !== undefined) process.env.SANDBOX_NAME = savedSandboxName;
+      else delete process.env.SANDBOX_NAME;
+    }
+  });
+
+  it("resolves JSON service status sandbox from NEMOCLAW_SANDBOX_NAME env (#1077)", () => {
+    const savedName = process.env.NEMOCLAW_SANDBOX_NAME;
+    process.env.NEMOCLAW_SANDBOX_NAME = "json-sandbox";
+    try {
+      const getServiceStatuses = vi.fn().mockReturnValue([]);
+      const report = getStatusReport({
+        listSandboxes: () => ({
+          sandboxes: [{ name: "json-sandbox" }],
+          defaultSandbox: "other",
+        }),
+        getLiveInference: () => null,
+        getServiceStatuses,
+      });
+      expect(getServiceStatuses).toHaveBeenCalledWith({ sandboxName: "json-sandbox" });
+      expect(report.defaultSandbox).toBe("json-sandbox");
+      expect(report.sandboxes[0]?.isDefault).toBe(true);
+    } finally {
+      if (savedName !== undefined) process.env.NEMOCLAW_SANDBOX_NAME = savedName;
+      else delete process.env.NEMOCLAW_SANDBOX_NAME;
+    }
   });
 
   it("does not annotate status when the live gateway matches the onboarded model", () => {

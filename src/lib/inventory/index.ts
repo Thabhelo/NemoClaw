@@ -4,6 +4,7 @@
 import { CLI_NAME } from "../cli/branding";
 import type { GatewayInference } from "../inference/config";
 import { redactFull } from "../security/redact";
+import { resolveDefaultSandboxName } from "../tunnel/service-command";
 
 export interface SandboxEntry {
   name: string;
@@ -362,7 +363,7 @@ function normalizeGatewayHealth(health: GatewayHealth | null | undefined): Gatew
 
 export function getStatusReport(deps: ShowStatusCommandDeps): StatusReport {
   const { sandboxes, defaultSandbox } = deps.listSandboxes();
-  const resolvedDefault = defaultSandbox || null;
+  const resolvedDefault = resolveDefaultSandboxName(deps.listSandboxes) ?? null;
   const liveInference = sandboxes.length > 0 ? deps.getLiveInference() : null;
   const gatewayHealth =
     deps.getGatewayHealth && sandboxes.length > 0 ? deps.getGatewayHealth() : null;
@@ -399,12 +400,13 @@ export function getStatusReport(deps: ShowStatusCommandDeps): StatusReport {
 export function showStatusCommand(deps: ShowStatusCommandDeps): void {
   const log = deps.log ?? console.log;
   const { sandboxes, defaultSandbox } = deps.listSandboxes();
+  const resolvedDefault = resolveDefaultSandboxName(deps.listSandboxes) ?? defaultSandbox;
   if (sandboxes.length > 0) {
     const live = deps.getLiveInference();
     log("");
     log("  Sandboxes:");
     for (const sb of sandboxes) {
-      const isDefault = sb.name === defaultSandbox;
+      const isDefault = sb.name === resolvedDefault;
       const def = isDefault ? " *" : "";
       // Prefer the live gateway model for the default sandbox so `status`
       // agrees with `openshell inference get` (#2369).
@@ -459,7 +461,7 @@ export function showStatusCommand(deps: ShowStatusCommandDeps): void {
     }
   }
 
-  deps.showServiceStatus({ sandboxName: defaultSandbox || undefined });
+  deps.showServiceStatus({ sandboxName: resolvedDefault || undefined });
 
   if (deps.backfillAndFindOverlaps) {
     const overlaps = deps.backfillAndFindOverlaps();
