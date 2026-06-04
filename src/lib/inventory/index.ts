@@ -362,7 +362,7 @@ function normalizeGatewayHealth(health: GatewayHealth | null | undefined): Gatew
 }
 
 export function getStatusReport(deps: ShowStatusCommandDeps): StatusReport {
-  const { sandboxes, defaultSandbox } = deps.listSandboxes();
+  const { sandboxes } = deps.listSandboxes();
   const resolvedDefault = resolveDefaultSandboxName(deps.listSandboxes) ?? null;
   const liveInference = sandboxes.length > 0 ? deps.getLiveInference() : null;
   const gatewayHealth =
@@ -399,8 +399,8 @@ export function getStatusReport(deps: ShowStatusCommandDeps): StatusReport {
  */
 export function showStatusCommand(deps: ShowStatusCommandDeps): void {
   const log = deps.log ?? console.log;
-  const { sandboxes, defaultSandbox } = deps.listSandboxes();
-  const resolvedDefault = resolveDefaultSandboxName(deps.listSandboxes) ?? defaultSandbox;
+  const { sandboxes } = deps.listSandboxes();
+  const resolvedDefault = resolveDefaultSandboxName(deps.listSandboxes) ?? null;
   if (sandboxes.length > 0) {
     const live = deps.getLiveInference();
     log("");
@@ -482,15 +482,15 @@ export function showStatusCommand(deps: ShowStatusCommandDeps): void {
     }
   }
 
-  if (deps.checkMessagingBridgeHealth && defaultSandbox) {
+  if (deps.checkMessagingBridgeHealth && resolvedDefault) {
     // Re-fetch: backfillAndFindOverlaps above may have populated
     // messagingChannels for the default sandbox on first run after upgrade,
     // and the original `sandboxes` snapshot is stale.
     const refreshed = deps.listSandboxes().sandboxes;
-    const defaultEntry = refreshed.find((sb) => sb.name === defaultSandbox);
+    const defaultEntry = refreshed.find((sb) => sb.name === resolvedDefault);
     const channels = defaultEntry?.messagingChannels;
     if (Array.isArray(channels) && channels.length > 0) {
-      const degraded = deps.checkMessagingBridgeHealth(defaultSandbox, channels);
+      const degraded = deps.checkMessagingBridgeHealth(resolvedDefault, channels);
       if (degraded.length > 0) {
         log("");
         for (const { channel, conflicts } of degraded) {
@@ -504,7 +504,7 @@ export function showStatusCommand(deps: ShowStatusCommandDeps): void {
 
         // Surface gateway log tail for Hermes sandboxes when messaging is degraded.
         if (deps.readGatewayLog && defaultEntry?.agent === "hermes") {
-          const logTail = deps.readGatewayLog(defaultSandbox);
+          const logTail = deps.readGatewayLog(resolvedDefault);
           if (logTail) {
             log("");
             log("  Messaging gateway log (last 10 lines):");

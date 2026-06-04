@@ -545,6 +545,10 @@ describe("inventory commands", () => {
 
   it("resolves service status sandbox from SANDBOX_NAME env (#1077)", () => {
     const savedSandboxName = process.env.SANDBOX_NAME;
+    const savedNemoclawSandboxName = process.env.NEMOCLAW_SANDBOX_NAME;
+    const savedNemoclawSandbox = process.env.NEMOCLAW_SANDBOX;
+    delete process.env.NEMOCLAW_SANDBOX_NAME;
+    delete process.env.NEMOCLAW_SANDBOX;
     process.env.SANDBOX_NAME = "env-sandbox";
     try {
       const showServiceStatus = vi.fn();
@@ -561,11 +565,22 @@ describe("inventory commands", () => {
     } finally {
       if (savedSandboxName !== undefined) process.env.SANDBOX_NAME = savedSandboxName;
       else delete process.env.SANDBOX_NAME;
+      if (savedNemoclawSandboxName !== undefined) {
+        process.env.NEMOCLAW_SANDBOX_NAME = savedNemoclawSandboxName;
+      } else {
+        delete process.env.NEMOCLAW_SANDBOX_NAME;
+      }
+      if (savedNemoclawSandbox !== undefined) process.env.NEMOCLAW_SANDBOX = savedNemoclawSandbox;
+      else delete process.env.NEMOCLAW_SANDBOX;
     }
   });
 
   it("resolves JSON service status sandbox from NEMOCLAW_SANDBOX_NAME env (#1077)", () => {
     const savedName = process.env.NEMOCLAW_SANDBOX_NAME;
+    const savedSandboxName = process.env.SANDBOX_NAME;
+    const savedNemoclawSandbox = process.env.NEMOCLAW_SANDBOX;
+    delete process.env.SANDBOX_NAME;
+    delete process.env.NEMOCLAW_SANDBOX;
     process.env.NEMOCLAW_SANDBOX_NAME = "json-sandbox";
     try {
       const getServiceStatuses = vi.fn().mockReturnValue([]);
@@ -583,6 +598,10 @@ describe("inventory commands", () => {
     } finally {
       if (savedName !== undefined) process.env.NEMOCLAW_SANDBOX_NAME = savedName;
       else delete process.env.NEMOCLAW_SANDBOX_NAME;
+      if (savedSandboxName !== undefined) process.env.SANDBOX_NAME = savedSandboxName;
+      else delete process.env.SANDBOX_NAME;
+      if (savedNemoclawSandbox !== undefined) process.env.NEMOCLAW_SANDBOX = savedNemoclawSandbox;
+      else delete process.env.NEMOCLAW_SANDBOX;
     }
   });
 
