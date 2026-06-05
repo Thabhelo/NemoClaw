@@ -591,6 +591,7 @@ describe("inventory commands", () => {
         }),
         getLiveInference: () => null,
         getServiceStatuses,
+        showServiceStatus: vi.fn(),
       });
       expect(getServiceStatuses).toHaveBeenCalledWith({ sandboxName: "json-sandbox" });
       expect(report.defaultSandbox).toBe("json-sandbox");
