@@ -543,6 +543,75 @@ describe("inventory commands", () => {
     expect(showServiceStatus).toHaveBeenCalledWith({ sandboxName: "alpha" });
   });
 
+  it("reuses the existing sandbox list when resolving status service sandbox", () => {
+    const savedSandboxName = process.env.SANDBOX_NAME;
+    const savedNemoclawSandboxName = process.env.NEMOCLAW_SANDBOX_NAME;
+    const savedNemoclawSandbox = process.env.NEMOCLAW_SANDBOX;
+    delete process.env.SANDBOX_NAME;
+    delete process.env.NEMOCLAW_SANDBOX_NAME;
+    delete process.env.NEMOCLAW_SANDBOX;
+    try {
+      const listSandboxes = vi.fn(() => ({
+        sandboxes: [{ name: "alpha", model: "nvidia/nemotron-3-super-120b-a12b" }],
+        defaultSandbox: "alpha",
+      }));
+      const showServiceStatus = vi.fn();
+      showStatusCommand({
+        listSandboxes,
+        getLiveInference: () => null,
+        showServiceStatus,
+        log: vi.fn(),
+      });
+      expect(listSandboxes).toHaveBeenCalledOnce();
+      expect(showServiceStatus).toHaveBeenCalledWith({ sandboxName: "alpha" });
+    } finally {
+      if (savedSandboxName !== undefined) process.env.SANDBOX_NAME = savedSandboxName;
+      else delete process.env.SANDBOX_NAME;
+      if (savedNemoclawSandboxName !== undefined) {
+        process.env.NEMOCLAW_SANDBOX_NAME = savedNemoclawSandboxName;
+      } else {
+        delete process.env.NEMOCLAW_SANDBOX_NAME;
+      }
+      if (savedNemoclawSandbox !== undefined) process.env.NEMOCLAW_SANDBOX = savedNemoclawSandbox;
+      else delete process.env.NEMOCLAW_SANDBOX;
+    }
+  });
+
+  it("reuses the existing sandbox list when resolving JSON status service sandbox", () => {
+    const savedSandboxName = process.env.SANDBOX_NAME;
+    const savedNemoclawSandboxName = process.env.NEMOCLAW_SANDBOX_NAME;
+    const savedNemoclawSandbox = process.env.NEMOCLAW_SANDBOX;
+    delete process.env.SANDBOX_NAME;
+    delete process.env.NEMOCLAW_SANDBOX_NAME;
+    delete process.env.NEMOCLAW_SANDBOX;
+    try {
+      const listSandboxes = vi.fn(() => ({
+        sandboxes: [{ name: "alpha", model: "nvidia/nemotron-3-super-120b-a12b" }],
+        defaultSandbox: "alpha",
+      }));
+      const getServiceStatuses = vi.fn().mockReturnValue([]);
+      const report = getStatusReport({
+        listSandboxes,
+        getLiveInference: () => null,
+        getServiceStatuses,
+        showServiceStatus: vi.fn(),
+      });
+      expect(listSandboxes).toHaveBeenCalledOnce();
+      expect(getServiceStatuses).toHaveBeenCalledWith({ sandboxName: "alpha" });
+      expect(report.defaultSandbox).toBe("alpha");
+    } finally {
+      if (savedSandboxName !== undefined) process.env.SANDBOX_NAME = savedSandboxName;
+      else delete process.env.SANDBOX_NAME;
+      if (savedNemoclawSandboxName !== undefined) {
+        process.env.NEMOCLAW_SANDBOX_NAME = savedNemoclawSandboxName;
+      } else {
+        delete process.env.NEMOCLAW_SANDBOX_NAME;
+      }
+      if (savedNemoclawSandbox !== undefined) process.env.NEMOCLAW_SANDBOX = savedNemoclawSandbox;
+      else delete process.env.NEMOCLAW_SANDBOX;
+    }
+  });
+
   it("resolves service status sandbox from SANDBOX_NAME env (#1077)", () => {
     const savedSandboxName = process.env.SANDBOX_NAME;
     const savedNemoclawSandboxName = process.env.NEMOCLAW_SANDBOX_NAME;

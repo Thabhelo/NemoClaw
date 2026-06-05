@@ -362,8 +362,9 @@ function normalizeGatewayHealth(health: GatewayHealth | null | undefined): Gatew
 }
 
 export function getStatusReport(deps: ShowStatusCommandDeps): StatusReport {
-  const { sandboxes } = deps.listSandboxes();
-  const resolvedDefault = resolveDefaultSandboxName(deps.listSandboxes) ?? null;
+  const sandboxList = deps.listSandboxes();
+  const { sandboxes } = sandboxList;
+  const resolvedDefault = resolveDefaultSandboxName(() => sandboxList) ?? null;
   const liveInference = sandboxes.length > 0 ? deps.getLiveInference() : null;
   const gatewayHealth =
     deps.getGatewayHealth && sandboxes.length > 0 ? deps.getGatewayHealth() : null;
@@ -399,8 +400,9 @@ export function getStatusReport(deps: ShowStatusCommandDeps): StatusReport {
  */
 export function showStatusCommand(deps: ShowStatusCommandDeps): void {
   const log = deps.log ?? console.log;
-  const { sandboxes } = deps.listSandboxes();
-  const resolvedDefault = resolveDefaultSandboxName(deps.listSandboxes) ?? null;
+  const sandboxList = deps.listSandboxes();
+  const { sandboxes } = sandboxList;
+  const resolvedDefault = resolveDefaultSandboxName(() => sandboxList) ?? null;
   if (sandboxes.length > 0) {
     const live = deps.getLiveInference();
     log("");
