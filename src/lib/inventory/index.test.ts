@@ -671,7 +671,7 @@ describe("inventory commands", () => {
             model: "nvidia/nemotron-3-super-120b-a12b",
             provider: "nvidia-prod",
           },
-          { name: "beta", model: "qwen2.5:7b", provider: "ollama-local" },
+          { name: "beta", model: "qwen3.5:9b", provider: "ollama-local" },
         ],
         defaultSandbox: "alpha",
       }),
@@ -681,7 +681,7 @@ describe("inventory commands", () => {
     });
 
     expect(lines).toContain("      Inference: nvidia-prod / nvidia/nemotron-3-super-120b-a12b");
-    expect(lines).toContain("      Inference: ollama-local / qwen2.5:7b");
+    expect(lines).toContain("      Inference: ollama-local / qwen3.5:9b");
   });
 
   it("prefers live gateway provider for the default sandbox in the Inference line (#2604)", () => {
