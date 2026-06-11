@@ -40,6 +40,7 @@ describe("uninstall plan", () => {
           path: path.join("/usr/local/bin", binary),
         })),
         { kind: "stop-ollama-auth-proxy" },
+        { kind: "stop-model-router" },
       ]),
     );
 
@@ -49,7 +50,10 @@ describe("uninstall plan", () => {
     const stoppingServicesStep = plan.steps.find((step) => step.name === "Stopping services");
     expect(stoppingServicesStep).toBeTruthy();
     expect(stoppingServicesStep?.actions).toEqual(
-      expect.arrayContaining([{ kind: "stop-ollama-auth-proxy" }]),
+      expect.arrayContaining([
+        { kind: "stop-ollama-auth-proxy" },
+        { kind: "stop-model-router" },
+      ]),
     );
   });
 
