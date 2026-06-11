@@ -1106,7 +1106,7 @@ Skill names must contain only alphanumeric characters, dots, hyphens, and unders
 
 <AgentOnly variant="openclaw">
 
-OpenClaw plugins are a different kind of extension. To install an OpenClaw plugin, see [Install OpenClaw Plugins](../manage-sandboxes/install-openclaw-plugins).
+OpenClaw plugins are a different kind of extension. To install an OpenClaw plugin, see [Install OpenClaw Plugins](../deployment/install-openclaw-plugins).
 For OpenClaw, the command uploads the skill to the OpenClaw state directory and mirrors it into `$HOME/.openclaw/skills/<name>` when the agent home directory differs from the state directory.
 That mirror makes skills listed by `openclaw skills list` available at session startup.
 If mirror creation fails, NemoClaw prints a warning so you can reinstall or inspect the home directory permissions.
@@ -1188,6 +1188,7 @@ $$nemoclaw my-assistant agents delete work --force --json
 
 List OpenClaw conversation sessions in the sandbox.
 With no subcommand the in-sandbox CLI lists stored sessions for the configured default agent.
+The `<name>` sandbox must already exist; if it does not, NemoClaw reports `Sandbox '<name>' does not exist` before invoking OpenClaw.
 This is a thin pass-through to `openclaw sessions` via `openshell sandbox exec`; flags accepted by the in-sandbox CLI are forwarded verbatim.
 
 ```bash
