@@ -44,9 +44,10 @@ describe("uninstall plan", () => {
       ]),
     );
 
-    // The Ollama auth proxy must be stopped during the "Stopping services"
-    // step, before any "State and binaries" cleanup deletes the PID file.
-    // Otherwise a stale proxy on :11435 blocks reinstall (issue #2759).
+    // Both the Ollama auth proxy and the model router must be stopped during
+    // the "Stopping services" step, before "State and binaries" deletes PID
+    // files. A stale proxy on :11435 blocks reinstall (#2759); a stale router
+    // on :4000 blocks reinstall (#5169).
     const stoppingServicesStep = plan.steps.find((step) => step.name === "Stopping services");
     expect(stoppingServicesStep).toBeTruthy();
     expect(stoppingServicesStep?.actions).toEqual(

@@ -18,8 +18,10 @@ function notFound(): RunResult {
 }
 
 const PROXY_CMDLINE = "/usr/bin/node /opt/nemoclaw/scripts/ollama-auth-proxy.js\n";
+// Real-world: model-router is a Python venv script so the OS interposes the
+// interpreter — args[0]=python, args[1]=model-router (issue #5169).
 const MODEL_ROUTER_CMDLINE =
-  "/home/test/.nemoclaw/model-router-venv/bin/model-router proxy --port 4000\n";
+  "/home/test/.nemoclaw/model-router-venv/bin/python /home/test/.nemoclaw/model-router-venv/bin/model-router proxy --port 4000\n";
 
 function psStub(pidStr: string, opts: { exited: Set<number>; cmdline?: string; owner?: string }) {
   return (args: readonly string[]): RunResult | null => {

@@ -546,7 +546,11 @@ function stopModelRouter(paths: UninstallPaths, runtime: UninstallRuntime): void
   const routerPort = resolveModelRouterPort(runtime);
 
   const recordedPid = readOnboardSessionRouterPid(paths);
-  if (recordedPid !== null && isModelRouterPid(recordedPid, routerPort, runtime)) {
+  if (
+    recordedPid !== null &&
+    pidOwnedByCurrentUser(recordedPid, runtime) &&
+    isModelRouterPid(recordedPid, routerPort, runtime)
+  ) {
     if (tryStopModelRouterPid(recordedPid, runtime)) stopped.add(recordedPid);
   }
 
