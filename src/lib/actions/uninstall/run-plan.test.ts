@@ -525,9 +525,7 @@ describe("uninstall run plan", () => {
     const logs: string[] = [];
     const killed: number[] = [];
     const exited = new Set<number>();
-    const tmpHome = fs.mkdtempSync(
-      path.join(os.tmpdir(), "nemoclaw-uninstall-test-5169-session-"),
-    );
+    const tmpHome = fs.mkdtempSync(path.join(os.tmpdir(), "nemoclaw-uninstall-test-5169-session-"));
     const stateDir = path.join(tmpHome, ".nemoclaw");
     const sessionFile = path.join(stateDir, "onboard-session.json");
     fs.mkdirSync(stateDir, { recursive: true });
