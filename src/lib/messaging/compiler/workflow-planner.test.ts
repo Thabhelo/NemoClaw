@@ -3,8 +3,12 @@
 
 import { describe, expect, it } from "vitest";
 
-import { createBuiltInChannelManifestRegistry } from "../channels";
+import {
+  createBuiltInChannelManifestRegistry,
+  createBuiltInRenderTemplateResolver,
+} from "../channels";
 import { createBuiltInMessagingHookRegistry, MessagingHookRegistry } from "../hooks";
+import { createChannelManifestRegistry, type ChannelManifest } from "../manifest";
 import { MessagingWorkflowPlanner } from "./workflow-planner";
 
 const TEST_CREDENTIALS: Readonly<Record<string, string>> = {
@@ -17,9 +21,37 @@ const TEST_CREDENTIALS: Readonly<Record<string, string>> = {
 const TEST_WECHAT_LOGIN = {
   token: "test-wechat-token",
   accountId: "test-wechat-account",
-  baseUrl: "https://ilinkai.wechat.example",
+  baseUrl: "https://ilinkai.wechat.com",
   userId: "test-wechat-user",
 } as const;
+
+const CREDENTIAL_ONLY_MANIFEST: ChannelManifest = {
+  schemaVersion: 1,
+  id: "matrix",
+  displayName: "Matrix",
+  supportedAgents: ["openclaw"],
+  auth: { mode: "none" },
+  inputs: [
+    {
+      id: "botToken",
+      kind: "secret",
+      required: true,
+      envKey: "MATRIX_BOT_TOKEN",
+    },
+  ],
+  credentials: [
+    {
+      id: "botToken",
+      sourceInput: "botToken",
+      providerName: "{sandboxName}-matrix",
+      providerEnvKey: "MATRIX_BOT_TOKEN",
+      placeholder: "MATRIX_BOT_TOKEN",
+    },
+  ],
+  render: [],
+  state: {},
+  hooks: [],
+};
 
 function planner(): MessagingWorkflowPlanner {
   return new MessagingWorkflowPlanner(
@@ -65,6 +97,7 @@ function planner(): MessagingWorkflowPlanner {
         },
       },
     }),
+    createBuiltInRenderTemplateResolver(),
   );
 }
 
@@ -217,6 +250,7 @@ describe("MessagingWorkflowPlanner", () => {
     const plan = await new MessagingWorkflowPlanner(
       createBuiltInChannelManifestRegistry(),
       hooks,
+      createBuiltInRenderTemplateResolver(),
     ).buildPlan({
       sandboxName: "demo",
       agent: "openclaw",
@@ -254,6 +288,25 @@ describe("MessagingWorkflowPlanner", () => {
         id: "slack.validateCredentials",
         handler: () => ({}),
       },
+      {
+        id: "wechat.seedOpenClawAccount",
+        handler: () => ({
+          outputs: {
+            openclawWeixinAccountsIndex: {
+              kind: "build-file",
+              value: { path: "openclaw-weixin/accounts.json", content: [] },
+            },
+            openclawWeixinAccountFile: {
+              kind: "build-file",
+              value: { path: "openclaw-weixin/accounts/cached-wechat-account.json", content: {} },
+            },
+            openclawConfigPatch: {
+              kind: "build-file",
+              value: { path: "openclaw.json", merge: {} },
+            },
+          },
+        }),
+      },
     ]);
 
     await withEnv(
@@ -265,6 +318,7 @@ describe("MessagingWorkflowPlanner", () => {
         const plan = await new MessagingWorkflowPlanner(
           createBuiltInChannelManifestRegistry(),
           hooks,
+          createBuiltInRenderTemplateResolver(),
         ).buildPlan({
           sandboxName: "demo",
           agent: "openclaw",
@@ -470,6 +524,7 @@ describe("MessagingWorkflowPlanner", () => {
     const plan = await new MessagingWorkflowPlanner(
       createBuiltInChannelManifestRegistry(),
       hooks,
+      createBuiltInRenderTemplateResolver(),
     ).buildChannelAddPlanFromSandboxEntry({
       sandboxName: "demo",
       agent: "openclaw",
@@ -501,6 +556,51 @@ describe("MessagingWorkflowPlanner", () => {
       "slack",
       "slack",
     ]);
+  });
+
+  it("does not trust credential availability from mismatched sandbox entry plans", async () => {
+    const registry = createChannelManifestRegistry([CREDENTIAL_ONLY_MANIFEST]);
+    const localPlanner = new MessagingWorkflowPlanner(
+      registry,
+      new MessagingHookRegistry(),
+      createBuiltInRenderTemplateResolver(),
+    );
+    const stalePlan = await localPlanner.buildPlan({
+      sandboxName: "other-sandbox",
+      agent: "openclaw",
+      workflow: "onboard",
+      isInteractive: false,
+      configuredChannels: ["matrix"],
+      credentialAvailability: {
+        MATRIX_BOT_TOKEN: true,
+      },
+    });
+
+    const plan = await localPlanner.buildChannelAddPlanFromSandboxEntry({
+      sandboxName: "demo",
+      agent: "openclaw",
+      sandboxEntry: {
+        name: "demo",
+        messaging: {
+          schemaVersion: 1,
+          plan: stalePlan,
+        },
+      },
+      channelId: "matrix",
+      isInteractive: false,
+      supportedChannelIds: ["matrix"],
+    });
+
+    expect(plan.channels).toHaveLength(1);
+    expect(plan.channels[0]).toMatchObject({
+      channelId: "matrix",
+      active: false,
+      configured: true,
+    });
+    expect(plan.credentialBindings[0]).toMatchObject({
+      channelId: "matrix",
+      credentialAvailable: false,
+    });
   });
 
   it("mutates disabled channel state in an existing sandbox entry plan", async () => {
@@ -625,7 +725,6 @@ describe("MessagingWorkflowPlanner", () => {
           agent: "openclaw",
           sandboxEntry: {
             name: "demo",
-            messagingChannels: ["telegram"],
             messaging: {
               schemaVersion: 1,
               plan: existingPlan,
@@ -651,13 +750,12 @@ describe("MessagingWorkflowPlanner", () => {
     );
   });
 
-  it("does not compile a rebuild plan when the sandbox entry has no stored plan", async () => {
+  it("does not compile a rebuild plan when the sandbox entry has no stored plan or channels", async () => {
     const rebuilt = await planner().buildRebuildPlanFromSandboxEntry({
       sandboxName: "demo",
       agent: "openclaw",
       sandboxEntry: {
         name: "demo",
-        messagingChannels: ["telegram"],
       },
     });
 
